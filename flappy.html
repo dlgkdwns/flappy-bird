@@ -49,7 +49,8 @@ const W = cv.width, H = cv.height;
 
 const GRAVITY = 0.45;
 const FLAP = -7.2;
-const PIPE_GAP = 130;
+const PIPE_GAP_MAX = 175; // 가장 쉬운 구간
+const PIPE_GAP_MIN = 95;  // 가장 어려운 구간
 const PIPE_W = 54;
 const PIPE_INTERVAL = 95; // frames
 const SPEED = 2.2;
@@ -81,9 +82,14 @@ cv.addEventListener("mousedown", flap);
 cv.addEventListener("touchstart", e => { e.preventDefault(); flap(); }, { passive: false });
 
 function spawnPipe() {
-  const margin = 50;
-  const top = margin + Math.random() * (H - GROUND_H - PIPE_GAP - margin * 2);
-  pipes.push({ x: W, top: top, passed: false });
+  // 점수가 오를수록 전체 범위가 좁아지고, 그 안에서 매 파이프마다 간격이 무작위로 달라진다
+  const progress = Math.min(score, 25) / 25; // 0 → 1
+  const gapCeil = PIPE_GAP_MAX - (PIPE_GAP_MAX - 135) * progress; // 175 → 135
+  const gapFloor = 130 - (130 - PIPE_GAP_MIN) * progress;         // 130 → 95
+  const gap = Math.round(gapFloor + Math.random() * (gapCeil - gapFloor));
+  const margin = 46;
+  const top = margin + Math.random() * (H - GROUND_H - gap - margin * 2);
+  pipes.push({ x: W, top: top, gap: gap, passed: false });
 }
 
 function update() {
@@ -104,7 +110,7 @@ function update() {
       // collision
       const inX = bird.x + bird.r > p.x && bird.x - bird.r < p.x + PIPE_W;
       const hitTop = bird.y - bird.r < p.top;
-      const hitBot = bird.y + bird.r > p.top + PIPE_GAP;
+      const hitBot = bird.y + bird.r > p.top + p.gap;
       if (inX && (hitTop || hitBot)) die();
     }
     pipes = pipes.filter(p => p.x + PIPE_W > -10);
@@ -138,7 +144,7 @@ function draw() {
   // pipes
   for (const p of pipes) {
     drawPipe(p.x, 0, p.top, true);
-    drawPipe(p.x, p.top + PIPE_GAP, H - GROUND_H - (p.top + PIPE_GAP), false);
+    drawPipe(p.x, p.top + p.gap, H - GROUND_H - (p.top + p.gap), false);
   }
 
   // ground
