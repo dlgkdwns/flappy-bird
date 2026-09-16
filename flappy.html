@@ -256,9 +256,9 @@ function draw() {
     ctx.fillStyle = "rgba(255,255,255,.9)";
     ctx.fillText("탭해서 다시 시작", W / 2, H / 2 + 46);
   } else if (paused) {
-    // "일시정지" 문구를 화면 정중앙(W/2, H/2)에 정확히 표시
-    ctx.fillStyle = "rgba(0,0,0,.35)";
-    ctx.fillRect(0, H / 2 - 60, W, 120);
+    // 화면 전체를 잿빛으로 덮고, "일시정지" 문구를 정중앙(W/2, H/2)에 표시
+    ctx.fillStyle = "rgba(90,90,90,.65)";
+    ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = "#fff";
     ctx.strokeStyle = "rgba(0,0,0,.35)";
     ctx.lineWidth = 3;
