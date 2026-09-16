@@ -2,6 +2,17 @@
 
 Canvas로 만든 단일 파일 플래피 버드 게임.
 
+## 배포
+
+**https://flappy-bird-53n.pages.dev** — Cloudflare Pages에 배포됨.
+
+코드를 수정한 뒤 재배포:
+
+```bash
+cp flappy.html dist/index.html
+wrangler pages deploy dist --project-name=flappy-bird
+```
+
 ## 플레이
 
 `flappy.html`을 브라우저로 열면 바로 실행됩니다.
@@ -9,6 +20,8 @@ Canvas로 만든 단일 파일 플래피 버드 게임.
 - **조작**: 클릭 / 스페이스바 / 터치로 날갯짓
 - 파이프 사이를 통과하면 점수 획득
 - 최고 점수는 브라우저(localStorage)에 저장
+- **목숨 3개**: 부딪혀도 바로 끝나지 않고 하트가 하나 줄어들며, 약 1.5초간 깜빡이는
+  무적 상태로 파이프를 통과할 수 있음. 하트가 0개가 되면 게임 오버.
 
 ## 난이도
 
