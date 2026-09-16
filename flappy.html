@@ -82,11 +82,19 @@ cv.addEventListener("mousedown", flap);
 cv.addEventListener("touchstart", e => { e.preventDefault(); flap(); }, { passive: false });
 
 function spawnPipe() {
-  // 점수가 오를수록 전체 범위가 좁아지고, 그 안에서 매 파이프마다 간격이 무작위로 달라진다
-  const progress = Math.min(score, 25) / 25; // 0 → 1
-  const gapCeil = PIPE_GAP_MAX - (PIPE_GAP_MAX - 135) * progress; // 175 → 135
-  const gapFloor = 130 - (130 - PIPE_GAP_MIN) * progress;         // 130 → 95
-  const gap = Math.round(gapFloor + Math.random() * (gapCeil - gapFloor));
+  // 매번 PIPE_GAP_MIN~MAX 전체 범위에서 무작위로 뽑되, 점수가 오를수록
+  // 지수를 키워 좁은 쪽으로 확률을 몰아준다 — 그래도 가끔은 넓은 파이프가 섞여
+  // 리듬이 절대 일정해지지 않는다.
+  const difficulty = Math.min(score / 20, 1); // 0 → 1
+  let t = Math.pow(Math.random(), 1 + difficulty * 1.6); // 0에 가까울수록 좁음
+  let gap = Math.round(PIPE_GAP_MIN + t * (PIPE_GAP_MAX - PIPE_GAP_MIN));
+
+  // 가끔(약 18%) 평소 분포를 무시하고 극단적으로 좁거나 넓은 파이프를 끼워 넣어
+  // 매 판이 다르게 느껴지도록 한다.
+  const surprise = Math.random();
+  if (surprise < 0.09) gap = PIPE_GAP_MIN + Math.round(Math.random() * 10);       // 깜짝 좁음
+  else if (surprise < 0.18) gap = PIPE_GAP_MAX - Math.round(Math.random() * 10); // 깜짝 넓음
+
   const margin = 46;
   const top = margin + Math.random() * (H - GROUND_H - gap - margin * 2);
   pipes.push({ x: W, top: top, gap: gap, passed: false });
