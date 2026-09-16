@@ -55,9 +55,11 @@ const PIPE_W = 54;
 const PIPE_INTERVAL = 95; // frames
 const SPEED = 2.2;
 const GROUND_H = 64;
+const MAX_LIVES = 3;
+const INVINCIBLE_FRAMES = 90; // 무적 지속 시간 (약 1.5초)
 
 let state = "ready"; // ready | play | dead
-let bird, pipes, frame, score, best;
+let bird, pipes, frame, score, best, lives, invincible;
 best = Number(localStorage.getItem("flappy_best") || 0);
 
 function reset() {
@@ -65,6 +67,8 @@ function reset() {
   pipes = [];
   frame = 0;
   score = 0;
+  lives = MAX_LIVES;
+  invincible = 0;
   state = "ready";
 }
 reset();
@@ -115,22 +119,41 @@ function update() {
         p.passed = true;
         score++;
       }
-      // collision
-      const inX = bird.x + bird.r > p.x && bird.x - bird.r < p.x + PIPE_W;
-      const hitTop = bird.y - bird.r < p.top;
-      const hitBot = bird.y + bird.r > p.top + p.gap;
-      if (inX && (hitTop || hitBot)) die();
+      // collision — 무적 상태면 파이프를 그냥 통과한다
+      if (invincible <= 0) {
+        const inX = bird.x + bird.r > p.x && bird.x - bird.r < p.x + PIPE_W;
+        const hitTop = bird.y - bird.r < p.top;
+        const hitBot = bird.y + bird.r > p.top + p.gap;
+        if (inX && (hitTop || hitBot)) hit();
+      }
     }
     pipes = pipes.filter(p => p.x + PIPE_W > -10);
 
-    if (bird.y + bird.r > H - GROUND_H) { bird.y = H - GROUND_H - bird.r; die(); }
+    if (bird.y + bird.r > H - GROUND_H) {
+      bird.y = H - GROUND_H - bird.r;
+      if (invincible <= 0) hit();
+      else bird.vy = 0; // 무적 중엔 바닥에 부딪혀도 목숨을 잃지 않고 그대로 멈춘다
+    }
     if (bird.y - bird.r < 0) { bird.y = bird.r; bird.vy = 0; }
+
+    if (invincible > 0) invincible--;
   } else if (state === "dead") {
     if (bird.y + bird.r < H - GROUND_H) {
       bird.vy += GRAVITY;
       bird.y += bird.vy;
       bird.rot = Math.min(1.5, bird.rot + 0.08);
     }
+  }
+}
+
+function hit() {
+  if (state !== "play" || invincible > 0) return;
+  lives--;
+  if (lives <= 0) {
+    die();
+  } else {
+    invincible = INVINCIBLE_FRAMES;
+    bird.vy = FLAP * 0.6; // 살짝 튕겨올라 같은 자리에서 바로 또 부딪히지 않도록
   }
 }
 
@@ -166,35 +189,38 @@ function draw() {
   ctx.fillStyle = "#7ec850";
   ctx.fillRect(0, H - GROUND_H, W, 10);
 
-  // bird
-  ctx.save();
-  ctx.translate(bird.x, bird.y);
-  ctx.rotate(bird.rot);
-  ctx.fillStyle = "#f7d51d";
-  ctx.beginPath();
-  ctx.arc(0, 0, bird.r, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#fff";
-  ctx.beginPath();
-  ctx.arc(4, -4, 4, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#000";
-  ctx.beginPath();
-  ctx.arc(5.5, -4, 2, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#e8820f";
-  ctx.beginPath();
-  ctx.moveTo(bird.r - 2, 0);
-  ctx.lineTo(bird.r + 7, -3);
-  ctx.lineTo(bird.r + 7, 3);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = "#e8a317";
-  const wingY = Math.sin(frame * 0.4) * 3;
-  ctx.beginPath();
-  ctx.ellipse(-3, 2 + wingY, 7, 4, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
+  // bird — 무적 상태일 땐 깜빡이며 몇 프레임마다 그리지 않는다
+  const blinkHidden = invincible > 0 && Math.floor(frame / 4) % 2 === 0;
+  if (!blinkHidden) {
+    ctx.save();
+    ctx.translate(bird.x, bird.y);
+    ctx.rotate(bird.rot);
+    ctx.fillStyle = "#f7d51d";
+    ctx.beginPath();
+    ctx.arc(0, 0, bird.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(4, -4, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.arc(5.5, -4, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#e8820f";
+    ctx.beginPath();
+    ctx.moveTo(bird.r - 2, 0);
+    ctx.lineTo(bird.r + 7, -3);
+    ctx.lineTo(bird.r + 7, 3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#e8a317";
+    const wingY = Math.sin(frame * 0.4) * 3;
+    ctx.beginPath();
+    ctx.ellipse(-3, 2 + wingY, 7, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
 
   // score
   ctx.fillStyle = "#fff";
@@ -205,6 +231,13 @@ function draw() {
   if (state === "play" || state === "ready") {
     ctx.strokeText(score, W / 2, 60);
     ctx.fillText(score, W / 2, 60);
+  }
+
+  // lives (하트)
+  if (state === "play" || state === "ready") {
+    for (let i = 0; i < MAX_LIVES; i++) {
+      drawHeart(20 + i * 26, 24, 15, i < lives ? "#ff4d5e" : "rgba(255,255,255,.3)");
+    }
   }
 
   if (state === "ready") {
@@ -231,6 +264,20 @@ function panel(title, sub) {
     ctx.font = "16px -apple-system, Segoe UI, sans-serif";
     ctx.fillText(sub, W / 2, H / 2 + 14);
   }
+}
+
+function drawHeart(cx, cy, s, color) {
+  ctx.fillStyle = color;
+  ctx.strokeStyle = "rgba(0,0,0,.35)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  const top = cy - s * 0.35;
+  ctx.moveTo(cx, cy + s * 0.55);
+  ctx.bezierCurveTo(cx - s * 0.9, cy - s * 0.1, cx - s * 0.4, top - s * 0.35, cx, top + s * 0.15);
+  ctx.bezierCurveTo(cx + s * 0.4, top - s * 0.35, cx + s * 0.9, cy - s * 0.1, cx, cy + s * 0.55);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
 }
 
 function drawPipe(x, y, h, isTop) {
