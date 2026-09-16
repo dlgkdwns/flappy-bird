@@ -118,6 +118,7 @@ function update() {
       if (!p.passed && p.x + PIPE_W < bird.x) {
         p.passed = true;
         score++;
+        if (score === 5) die();
       }
       // collision — 무적 상태면 파이프를 그냥 통과한다
       if (invincible <= 0) {
