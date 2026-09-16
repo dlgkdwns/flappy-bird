@@ -255,6 +255,22 @@ function draw() {
     ctx.font = "14px -apple-system, Segoe UI, sans-serif";
     ctx.fillStyle = "rgba(255,255,255,.9)";
     ctx.fillText("탭해서 다시 시작", W / 2, H / 2 + 46);
+  } else if (paused) {
+    // "일시정지" 문구를 화면 정중앙(W/2, H/2)에 정확히 표시
+    ctx.fillStyle = "rgba(0,0,0,.35)";
+    ctx.fillRect(0, H / 2 - 60, W, 120);
+    ctx.fillStyle = "#fff";
+    ctx.strokeStyle = "rgba(0,0,0,.35)";
+    ctx.lineWidth = 3;
+    ctx.font = "bold 32px -apple-system, Segoe UI, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.strokeText("일시정지", W / 2, H / 2);
+    ctx.fillText("일시정지", W / 2, H / 2);
+    ctx.textBaseline = "alphabetic"; // 이후 다른 텍스트 렌더링에 영향 없도록 원복
+    ctx.font = "14px -apple-system, Segoe UI, sans-serif";
+    ctx.fillStyle = "rgba(255,255,255,.9)";
+    ctx.fillText("P 키를 눌러 계속하기", W / 2, H / 2 + 40);
   }
 }
 
