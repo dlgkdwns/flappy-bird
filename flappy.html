@@ -59,7 +59,7 @@ const MAX_LIVES = 3;
 const INVINCIBLE_FRAMES = 90; // 무적 지속 시간 (약 1.5초)
 
 let state = "ready"; // ready | play | dead
-let bird, pipes, frame, score, best, lives, invincible;
+let bird, pipes, frame, score, best, lives, invincible, paused;
 best = Number(localStorage.getItem("flappy_best") || 0);
 
 function reset() {
@@ -69,11 +69,13 @@ function reset() {
   score = 0;
   lives = MAX_LIVES;
   invincible = 0;
+  paused = false;
   state = "ready";
 }
 reset();
 
 function flap() {
+  if (paused) return;
   if (state === "ready") { state = "play"; bird.vy = FLAP; }
   else if (state === "play") { bird.vy = FLAP; }
   else if (state === "dead") { reset(); }
@@ -81,6 +83,10 @@ function flap() {
 
 document.addEventListener("keydown", e => {
   if (e.code === "Space" || e.code === "ArrowUp") { e.preventDefault(); flap(); }
+  else if (e.code === "KeyP") {
+    e.preventDefault();
+    if (state === "play") paused = !paused; // 플레이 중일 때만 일시정지 토글
+  }
 });
 cv.addEventListener("mousedown", flap);
 cv.addEventListener("touchstart", e => { e.preventDefault(); flap(); }, { passive: false });
@@ -105,6 +111,7 @@ function spawnPipe() {
 }
 
 function update() {
+  if (paused) return; // 일시정지 중엔 새·파이프·배경 전부 그대로 멈춘다
   frame++;
   if (state === "play") {
     bird.vy += GRAVITY;
@@ -180,7 +187,7 @@ function draw() {
   }
 
   // ground
-  if (state === "play") groundX = (groundX - SPEED) % 24;
+  if (state === "play" && !paused) groundX = (groundX - SPEED) % 24;
   ctx.fillStyle = "#ded895";
   ctx.fillRect(0, H - GROUND_H, W, GROUND_H);
   ctx.fillStyle = "#c9bd6f";
